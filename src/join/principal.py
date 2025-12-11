@@ -3,6 +3,7 @@ import os
 import json
 from Secundario import _read_csv,write_csv
 
+# Para ejecutar el programa usar: cd src/join python principal.py
 
 def parse():
     parser = argparse.ArgumentParser()

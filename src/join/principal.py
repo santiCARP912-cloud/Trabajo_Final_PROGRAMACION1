@@ -23,10 +23,8 @@ def parse():
 
     except FileNotFoundError:
         pass
-
     except json.JSONDecodeError:
         pass
-
     return args
 
 
@@ -45,7 +43,7 @@ def _read_csv(path):
         raise PermissionError("No tenés permisos para leer el archivo.")
 
     except csv.Error as e:
-        raise ValueError(f"Error leyendo el CSV '{path}': {e}")
+        raise ValueError(f"Error leyendo el CSV: {e}")
 
     except Exception as e:
-        raise RuntimeError(f"Error inesperado leyendo '{path}': {e}")
+        raise RuntimeError(f"Error inesperado leyendo: {e}")

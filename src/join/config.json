@@ -1,0 +1,5 @@
+{
+    "entrada_a": "ArchivoA.csv",
+    "entrada_b": "ArchivoB.csv",
+    "salida": "join_salida.csv"
+}

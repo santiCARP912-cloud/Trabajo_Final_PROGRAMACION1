@@ -1,7 +1,7 @@
 import argparse
-import csv
 import os
 import json
+from Secundario import _read_csv,write_csv
 
 
 def parse():
@@ -11,7 +11,7 @@ def parse():
     parser.add_argument("--output",  type=str, default="join_salida.csv")
     args = parser.parse_args()
 
-    archivo_config = os.path.join(os.path.dirname(_file_), "config.json")
+    archivo_config = os.path.join(os.path.dirname(__file__), "config.json")
 
     try:
         with open(archivo_config, "r", encoding="utf-8") as archivo:
@@ -23,27 +23,111 @@ def parse():
 
     except FileNotFoundError:
         pass
+
     except json.JSONDecodeError:
         pass
+
     return args
 
 
-def _read_csv(path):
+
+
+def pre_join_por_comun(encabezados_a, filas_a, encabezados_b, filas_b, identico):
+    if not identico:
+        raise ValueError("No hay columnas en común para realizar el join.")
+    final = []
+    matched_keys = set()
+    b = {}
+    for FB in filas_b:
+        key = tuple(FB.get(c, "") for c in identico)
+        if key not in b:
+            b[key] = []
+        b[key].append(FB)
+
+
+
+    for FA in filas_a:
+        key = tuple(FA.get(c, "") for c in identico)
+
+        if key in b:
+            for FB in b[key]:
+                combinado = {}
+                for X in encabezados_a:
+                    combinado[X] = FA.get(X, "")
+                for X in encabezados_b:
+                    if X not in identico:
+                        combinado[X] = FB.get(X, "")
+                final.append(combinado)
+            matched_keys.add(key)
+        else:
+            combinado = {}
+            for X in encabezados_a:
+                combinado[X] = FA.get(X, "")
+            for X in encabezados_b:
+                if X not in identico:
+                    combinado[X] = ""
+            final.append(combinado)
+
+    for key, fb_list in b.items():
+        if key in matched_keys:
+            continue
+        for FB in fb_list:
+            combinado = {}
+            
+            for X in encabezados_a:
+                if X in identico:
+                    combinado[X] = FB.get(X, "")
+                else:
+                    combinado[X] = ""
+            for X in encabezados_b:
+                if X not in identico:
+                    combinado[X] = FB.get(X, "")
+            final.append(combinado)
+
+    return final
+
+
+
+def join(input_a_path, input_b_path):
     try:
-        with open(path, newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            rows = list(reader)
-            headers = reader.fieldnames or []
-            return headers, rows
+        encabezados_a, filas_a = _read_csv(input_a_path)
+        encabezados_b, filas_b = _read_csv(input_b_path)
 
-    except FileNotFoundError:
-        raise FileNotFoundError("El archivo no existe o no se puede encontrar.")
+        if not encabezados_a:
+            raise ValueError(f"El archivo a no tiene encabezados.")
 
-    except PermissionError:
-        raise PermissionError("No tenés permisos para leer el archivo.")
+        if not encabezados_b:
+            raise ValueError(f"El archivo b no tiene encabezados.")
 
-    except csv.Error as e:
-        raise ValueError(f"Error leyendo el CSV: {e}")
+        
+        identico = [c for c in encabezados_a if c in encabezados_b]
+
+        if not identico:
+            raise ValueError("No existen columnas en común para realizar el join.")
+
+        out_headers = list(encabezados_a) + [c for c in encabezados_b if c not in identico]
+
+        out_rows = pre_join_por_comun(encabezados_a, filas_a, encabezados_b, filas_b, identico)
+
+        return out_headers, out_rows
+
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"No se pudo abrir alguno de los archivos para el join: {e}")
+
+    except PermissionError as e:
+        raise PermissionError(f"No tenés permisos para leer alguno de los archivos: {e}")
+
+    except ValueError as e:
+        raise ValueError(f"Error en el join: {e}")
 
     except Exception as e:
-        raise RuntimeError(f"Error inesperado leyendo: {e}")
+        raise RuntimeError(f"Error inesperado en join(): {e}")
+
+
+
+
+if __name__ == "__main__":
+    args = parse()
+    headers, rows = join(args.input_a, args.input_b)
+    write_csv(args.output, headers, rows)
+    print(f"Join completo. Archivo de Salida: {args.output}")

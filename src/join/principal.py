@@ -36,16 +36,15 @@ def parse():
 def pre_join_por_comun(encabezados_a, filas_a, encabezados_b, filas_b, identico):
     if not identico:
         raise ValueError("No hay columnas en común para realizar el join.")
+
     final = []
-    matched_keys = set()
     b = {}
+
     for FB in filas_b:
         key = tuple(FB.get(c, "") for c in identico)
         if key not in b:
             b[key] = []
         b[key].append(FB)
-
-
 
     for FA in filas_a:
         key = tuple(FA.get(c, "") for c in identico)
@@ -53,41 +52,17 @@ def pre_join_por_comun(encabezados_a, filas_a, encabezados_b, filas_b, identico)
         if key in b:
             for FB in b[key]:
                 combinado = {}
+
                 for X in encabezados_a:
                     combinado[X] = FA.get(X, "")
+
                 for X in encabezados_b:
                     if X not in identico:
                         combinado[X] = FB.get(X, "")
-                final.append(combinado)
-            matched_keys.add(key)
-        else:
-            combinado = {}
-            for X in encabezados_a:
-                combinado[X] = FA.get(X, "")
-            for X in encabezados_b:
-                if X not in identico:
-                    combinado[X] = ""
-            final.append(combinado)
 
-    for key, fb_list in b.items():
-        if key in matched_keys:
-            continue
-        for FB in fb_list:
-            combinado = {}
-            
-            for X in encabezados_a:
-                if X in identico:
-                    combinado[X] = FB.get(X, "")
-                else:
-                    combinado[X] = ""
-            for X in encabezados_b:
-                if X not in identico:
-                    combinado[X] = FB.get(X, "")
-            final.append(combinado)
+                final.append(combinado)
 
     return final
-
-
 
 def join(input_a_path, input_b_path):
     try:
